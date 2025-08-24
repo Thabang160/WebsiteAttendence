@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            padding: 20px;
+        }
+        
+        .header-section {
+            background: rgba(255, 255, 255, 0.95);
+            /* backdrop-filter: blur(10px); */
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .role-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .role-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            border: 2px solid transparent;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .role-card.active {
+            background: white;
+            color: #667eea;
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .role-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .role-card h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .role-card small {
+            opacity: 0.8;
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            /* backdrop-filter: blur(10px); */
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            height: 100%;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stats-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .leaderboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rank-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            margin-right: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .rank-1 { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%); }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%); }
+        .rank-other { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        
+        .student-info {
+            flex-grow: 1;
+        }
+        
+        .student-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+        
+        .student-program {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+        
+        .attendance-score {
+            text-align: right;
+        }
+        
+        .attendance-percent {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #27ae60;
+        }
+        
+        .insights-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .insight-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            /* backdrop-filter: blur(10px); */
+        }
+        
+        .insight-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        
+        .insight-text {
+            flex-grow: 1;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .insight-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .progress-custom {
+            height: 6px;
+            border-radius: 10px;
+            background: #e9ecef;
+            margin-top: 5px;
+        }
+        
+        .progress-custom .progress-bar {
+            border-radius: 10px;
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            color: #667eea;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        
+        .activity-feed {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f3f4;
+            animation: slideIn 0.5s ease-in;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .activity-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .activity-content {
+            flex-grow: 1;
+        }
+        
+        .activity-text {
+            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 2px;
+        }
+        
+        .activity-time {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+        
+        .prediction-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 1px solid #2196f3;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .prediction-title {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .prediction-desc {
+            font-size: 0.9rem;
+            color: #424242;
+        }
+        
+        .confidence-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+            border-radius: 10px;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="text-center mb-4">
+                <i class="fas fa-graduation-cap fa-4x text-primary mb-3"></i>
+                <h1 class="display-4 mb-2">Attendance Management System</h1>
+                <p class="lead text-muted">Interactive Dashboard & Analytics</p>
+            </div>
+            
+            <!-- Role Selector -->
+            <div class="role-selector">
+                <div class="role-card active" onclick="selectRole('system_admin', this)">
+                    <i class="fas fa-user-shield"></i>
+                    <h5>System Admin</h5>
+                    <small>Manage Organizations & Admins</small>
+                </div>
+                <div class="role-card" onclick="selectRole('org_admin', this)">
+                    <i class="fas fa-building"></i>
+                    <h5>Organization Admin</h5>
+                    <small>Manage Programs & View Results</small>
+                </div>
+                <div class="role-card" onclick="selectRole('program_admin', this)">
+                    <i class="fas fa-user-graduate"></i>
+                    <h5>Program Admin</h5>
+                    <small>Manage Students & Attendance</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Container -->
+        <div class="dashboard-container">
+            <div class="section-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard Analytics
+            </div>
+            
+            <!-- Stats Cards Row -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stats-number" id="totalStudents">2,890</div>
+                        <div class="stats-label">Total Students</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="stats-number" id="activePrograms">15</div>
+                        <div class="stats-label">Active Programs</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                       <div class="col-lg-3 col-md-6 mb-3">
+    <a href="/DetailedView.html" class="stats-card clickable" 
+       id="avgAttendanceCard" 
+       data-tooltip="Click to view DetailedView.html" 
+       style="text-decoration: none; color: inherit; display: block;">
+       
+        <div class="stats-icon" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stats-number" id="avgAttendance">87.5%</div>
+        <div class="stats-label">Average Attendance</div>
+    </a>
+</div>
+             </div>
+           </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="stats-number" id="dropOuts">45</div>
+                        <div class="stats-label">Drop Outs</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real-time Activity Feed -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="stats-card">
+                        <div class="section-title">
+                            <i class="fas fa-satellite-dish"></i>
+                            Live Activity Feed
+                            <span class="badge bg-success ms-2 pulse">LIVE</span>
+                        </div>
+                        <div id="activityFeed" class="activity-feed">
+                            <!-- Real-time activities will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard and Insights Row -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="leaderboard-card">
+                        <div class="section-title">
+                            <i class="fas fa-trophy"></i>
+                            Top 5 Attendees Leaderboard
+                            <button class="btn btn-sm btn-outline-primary ms-auto" onclick="exportLeaderboard()">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                        </div>
+                        <div id="leaderboardContainer">
+                            <!-- Leaderboard items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="insights-panel">
+                        <div class="section-title text-white">
+                            <i class="fas fa-lightbulb"></i>
+                            AI-Powered Insights
+                        </div>
+                        <div id="insightsContainer">
+                            <!-- Insights will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Analytics Row -->
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <div class="stats-card">
+                        <div class="section-title">
+                            <i class="fas fa-chart-line"></i>
+                            Attendance Trend (30 Days)
+                        </div>
+                        <canvas id="trendChart" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="stats-card">
+                        <div class="section-title">
+                            <i class="fas fa-brain"></i>
+                            Predictive Analytics
+                        </div>
+                        <div id="predictiveAnalytics">
+                            <!-- ML predictions will go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Alerts -->
+            <div class="row" id="emergencyAlerts" style="display: none;">
+                <div class="col-12">
+                    <div class="alert alert-danger d-flex align-items-center alert-dismissible fade show">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <strong>Attendance Emergency Alert!</strong><br>
+                            <span id="emergencyMessage"></span>
+                        </div>
+                        <button type="button" class="btn-close" onclick="dismissAlert()"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample data structure
+        const data = {
+            system_admin: {
+                totalStudents: 2890,
+                activePrograms: 15,
+                avgAttendance: 87.5,
+                dropOuts: 45,
+                topStudents: [
+                    { name: "Sarah Mitchell", program: "Computer Science", attendance: 98.5, studentId: "CS2024001" },
+                    { name: "James Rodriguez", program: "Data Science", attendance: 97.2, studentId: "DS2024005" },
+                    { name: "Emily Chen", program: "Software Engineering", attendance: 96.8, studentId: "SE2024012" },
+                    { name: "Michael Johnson", program: "Cybersecurity", attendance: 96.1, studentId: "CY2024008" },
+                    { name: "Ashley Davis", program: "AI & Machine Learning", attendance: 95.7, studentId: "AI2024003" }
+                ],
+                insights: [
+                    { icon: "fas fa-robot", title: "AI Recommendation", desc: "Deploy intervention program for at-risk students", type: "success" },
+                    { icon: "fas fa-exclamation-triangle", title: "Predictive Alert", desc: "Engineering programs may see 15% dropout rate", type: "warning" },
+                    { icon: "fas fa-brain", title: "ML Insight", desc: "Students with <80% attendance 3x more likely to drop", type: "info" },
+                    { icon: "fas fa-chart-pie", title: "Smart Analytics", desc: "Optimal class timing: 10 AM shows highest attendance", type: "success" }
+                ]
+            },
+            org_admin: {
+                totalStudents: 1250,
+                activePrograms: 6,
+                avgAttendance: 89.2,
+                dropOuts: 18,
+                topStudents: [
+                    { name: "Lisa Thompson", program: "Business Administration", attendance: 97.8, studentId: "BA2024001" },
+                    { name: "Robert Wilson", program: "Marketing", attendance: 96.5, studentId: "MK2024007" },
+                    { name: "Jennifer Kim", program: "Finance", attendance: 95.9, studentId: "FN2024004" },
+                    { name: "David Lee", program: "Management", attendance: 95.3, studentId: "MG2024009" },
+                    { name: "Maria Garcia", program: "Economics", attendance: 94.8, studentId: "EC2024002" }
+                ],
+                insights: [
+                    { icon: "fas fa-chart-bar", title: "Program Performance", desc: "Business Admin leads with 91.5% attendance rate", type: "success" },
+                    { icon: "fas fa-clock", title: "Attendance Tracking", desc: "Real-time monitoring active for all programs", type: "info" },
+                    { icon: "fas fa-graduation-cap", title: "Graduation Ready", desc: "245 students eligible for graduation", type: "success" },
+                    { icon: "fas fa-calendar-check", title: "Perfect Attendance", desc: "78 students with 100% attendance this month", type: "info" }
+                ]
+            },
+            program_admin: {
+                totalStudents: 450,
+                activePrograms: 1,
+                avgAttendance: 91.8,
+                dropOuts: 8,
+                topStudents: [
+                    { name: "Alex Thompson", program: "Computer Science", attendance: 99.2, studentId: "CS2024015" },
+                    { name: "Emma Wilson", program: "Computer Science", attendance: 98.7, studentId: "CS2024023" },
+                    { name: "Noah Martinez", program: "Computer Science", attendance: 98.1, studentId: "CS2024031" },
+                    { name: "Sophia Anderson", program: "Computer Science", attendance: 97.6, studentId: "CS2024044" },
+                    { name: "Liam Brown", program: "Computer Science", attendance: 97.2, studentId: "CS2024052" }
+                ],
+                insights: [
+                    { icon: "fas fa-trophy", title: "Top Performance", desc: "Your program ranks #1 in attendance across university", type: "success" },
+                    { icon: "fas fa-calendar-alt", title: "Timeframe Active", desc: "Spring 2024 attendance tracking period active", type: "info" },
+                    { icon: "fas fa-user-check", title: "Active Students", desc: "442 out of 450 students actively attending", type: "success" },
+                    { icon: "fas fa-chart-line", title: "Trend Analysis", desc: "3% improvement in attendance over last semester", type: "success" }
+                ]
+            }
+        };
+
+        let currentRole = 'system_admin';
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            startRealTimeUpdates();
+            initializeCharts();
+            simulateEmergencyAlert();
+        });
+        
+        // Real-time activity simulation
+        function startRealTimeUpdates() {
+            const activities = [
+                { icon: "fas fa-user-check", color: "#28a745", text: "Sarah Mitchell checked in", time: "2 seconds ago" },
+                { icon: "fas fa-clock", color: "#ffc107", text: "Late arrival detected: James Wilson", time: "15 seconds ago" },
+                { icon: "fas fa-user-plus", color: "#17a2b8", text: "New student enrolled: Emma Chen", time: "1 minute ago" },
+                { icon: "fas fa-chart-line", color: "#6f42c1", text: "Attendance rate updated: 89.2%", time: "2 minutes ago" },
+                { icon: "fas fa-exclamation-triangle", color: "#dc3545", text: "Absence streak alert: Alex Thompson", time: "3 minutes ago" }
+            ];
+            
+            let activityIndex = 0;
+            
+            setInterval(() => {
+                const activity = activities[activityIndex];
+                addActivityToFeed(activity);
+                activityIndex = (activityIndex + 1) % activities.length;
+                
+                // Simulate real-time stat updates
+                updateRealTimeStats();
+            }, 5000);
+            
+            // Initial activities
+            activities.slice(0, 3).forEach((activity, index) => {
+                setTimeout(() => addActivityToFeed(activity), index * 1000);
+            });
+        }
+        
+        function addActivityToFeed(activity) {
+            const feed = document.getElementById('activityFeed');
+            const activityHTML = `
+                <div class="activity-item">
+                    <div class="activity-icon" style="background: ${activity.color}">
+                        <i class="${activity.icon}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-text">${activity.text}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                </div>
+            `;
+            
+            feed.insertAdjacentHTML('afterbegin', activityHTML);
+            
+            // Keep only last 5 activities
+            const items = feed.querySelectorAll('.activity-item');
+            if (items.length > 5) {
+                items[items.length - 1].remove();
+            }
+        }
+        
+        function updateRealTimeStats() {
+            // Simulate minor stat fluctuations
+            const elements = ['totalStudents', 'avgAttendance'];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                const current = parseFloat(element.textContent.replace(/[,%]/g, ''));
+                const change = (Math.random() - 0.5) * 2; // ±1 change
+                
+                if (id === 'avgAttendance') {
+                    const newValue = Math.max(80, Math.min(100, current + change));
+                    element.textContent = newValue.toFixed(1) + '%';
+                } else {
+                    const newValue = Math.max(0, Math.floor(current + change));
+                    element.textContent = newValue.toLocaleString();
+                }
+            });
+        }
+        
+        function initializeCharts() {
+            const ctx = document.getElementById('trendChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Attendance Rate',
+                        data: [85, 88, 87, 91],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 80,
+                            max: 100
+                        }
+                    }
+                }
+            });
+            
+            // Initialize predictive analytics
+            updatePredictiveAnalytics();
+        }
+        
+        function updatePredictiveAnalytics() {
+            const predictions = [
+                {
+                    title: "Dropout Risk Prediction",
+                    desc: "8 students at high risk of dropping out next month",
+                    confidence: 87,
+                    icon: "fas fa-user-times"
+                },
+                {
+                    title: "Attendance Forecast",
+                    desc: "Expected 3.2% increase in overall attendance",
+                    confidence: 92,
+                    icon: "fas fa-chart-line"
+                },
+                {
+                    title: "Intervention Needed",
+                    desc: "5 students require immediate attention",
+                    confidence: 78,
+                    icon: "fas fa-exclamation-circle"
+                }
+            ];
+            
+            const container = document.getElementById('predictiveAnalytics');
+            const predictionsHTML = predictions.map(pred => `
+                <div class="prediction-card">
+                    <div class="prediction-title">
+                        <i class="${pred.icon} me-2"></i>
+                        ${pred.title}
+                    </div>
+                    <div class="prediction-desc">${pred.desc}</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${pred.confidence}%"></div>
+                    </div>
+                    <small class="text-muted mt-1">Confidence: ${pred.confidence}%</small>
+                </div>
+            `).join('');
+            
+            container.innerHTML = predictionsHTML;
+        }
+        
+        function simulateEmergencyAlert() {
+            // Show emergency alert after 10 seconds
+            setTimeout(() => {
+                const alertsContainer = document.getElementById('emergencyAlerts');
+                const messageElement = document.getElementById('emergencyMessage');
+                
+                messageElement.textContent = "Critical attendance drop detected in Computer Science program. 15+ students absent for 3+ consecutive days.";
+                alertsContainer.style.display = 'block';
+                
+                // Add notification badge to role selector
+                const systemAdminCard = document.querySelector('.role-card');
+                if (systemAdminCard && !systemAdminCard.querySelector('.notification-badge')) {
+                    systemAdminCard.style.position = 'relative';
+                    systemAdminCard.insertAdjacentHTML('beforeend', '<span class="notification-badge">!</span>');
+                }
+            }, 10000);
+        }
+        
+        function dismissAlert() {
+            document.getElementById('emergencyAlerts').style.display = 'none';
+            // Remove notification badge
+            const badge = document.querySelector('.notification-badge');
+            if (badge) badge.remove();
+        }
+        
+        function exportLeaderboard() {
+            const data = getCurrentRoleData().topStudents;
+            const csv = 'Rank,Name,Program,Student ID,Attendance\n' + 
+                       data.map((student, index) => 
+                           `${index + 1},"${student.name}","${student.program}","${student.studentId}",${student.attendance}%`
+                       ).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'top_attendees_leaderboard.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Show success message
+            showToast('Leaderboard exported successfully!', 'success');
+        }
+        
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function getCurrentRoleData() {
+            return data[currentRole];
+        }
+
+        function selectRole(role, element) {
+            // Update active role card
+            document.querySelectorAll('.role-card').forEach(card => card.classList.remove('active'));
+            element.classList.add('active');
+            
+            currentRole = role;
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const roleData = data[currentRole];
+            
+            // Update stats cards
+            document.getElementById('totalStudents').textContent = roleData.totalStudents.toLocaleString();
+            document.getElementById('activePrograms').textContent = roleData.activePrograms;
+            document.getElementById('avgAttendance').textContent = roleData.avgAttendance + '%';
+            document.getElementById('dropOuts').textContent = roleData.dropOuts;
+            
+            // Update leaderboard
+            updateLeaderboard(roleData.topStudents);
+            
+            // Update insights
+            updateInsights(roleData.insights);
+        }
+
+        function updateLeaderboard(students) {
+            const container = document.getElementById('leaderboardContainer');
+            
+            const leaderboardHTML = students.map((student, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
+                
+                return `
+                    <div class="leaderboard-item">
+                        <div class="rank-badge ${rankClass}">
+                            ${rank <= 3 ? ['🥇', '🥈', '🥉'][index] : rank}
+                        </div>
+                        <div class="student-info">
+                            <div class="student-name">${student.name}</div>
+                            <div class="student-program">${student.program} • ${student.studentId}</div>
+                        </div>
+                        <div class="attendance-score">
+                            <div class="attendance-percent">${student.attendance}%</div>
+                            <div class="progress-custom">
+                                <div class="progress-bar" style="width: ${student.attendance}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = leaderboardHTML;
+        }
+
+        function updateInsights(insights) {
+            const container = document.getElementById('insightsContainer');
+            
+            const insightsHTML = insights.map(insight => `
+                <div class="insight-item">
+                    <div class="insight-icon">
+                        <i class="${insight.icon}"></i>
+                    </div>
+                    <div class="insight-text">
+                        <div class="insight-title">${insight.title}</div>
+                        <div class="insight-desc">${insight.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = insightsHTML;
+        }
+
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stats cards on load
+            const statsCards = document.querySelectorAll('.stats-card');
+            statsCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 100);
+            });
+        });
+
+        // Add hover effects for leaderboard items
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('mouseover', function(e) {
+                if (e.target.closest('.leaderboard-item')) {
+                    e.target.closest('.leaderboard-item').style.background = '#f8f9fa';
+                    e.target.closest('.leaderboard-item').style.borderRadius = '10px';
+                    e.target.closest('.leaderboard-item').style.transition = 'all 0.3s ease';
+                }
+            });
+            
+            document.addEventListener('mouseout', function(e) {
+                if (e.target.closest('.leaderboard-item')) {
+                    e.target.closest('.leaderboard-item').style.background = 'transparent';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

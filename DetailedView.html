@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Attendance Records</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .records-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .records-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .student-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .attendance-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .status-present { background: #d4edda; color: #155724; }
+        .status-absent { background: #f8d7da; color: #721c24; }
+        .status-late { background: #fff3cd; color: #856404; }
+        .status-excused { background: #d1ecf1; color: #0c5460; }
+        
+        .date-filter {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-mini {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stats-mini-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stats-mini-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+        
+        .attendance-chart {
+            height: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-gradient:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .table-attendance {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table-attendance thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .table-attendance tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background: white;
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .search-result-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .no-records {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .export-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="records-container">
+        <!-- Search Section -->
+        <div class="search-card">
+            <h2 class="mb-4">
+                <i class="fas fa-search me-2 text-primary"></i>
+                Student Attendance Records
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="position-relative">
+                        <label class="form-label">Search Student</label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="studentSearch" 
+                               placeholder="Enter student name or ID..." 
+                               autocomplete="off">
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-gradient btn-lg w-100" onclick="searchStudent()">
+                        <i class="fas fa-search me-2"></i>Search Records
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Records Section -->
+        <div id="recordsSection" style="display: none;">
+            <!-- Student Header -->
+            <div class="student-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 id="studentName" class="mb-1"></h3>
+                        <p id="studentDetails" class="mb-0 opacity-75"></p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-light" onclick="exportRecords()">
+                            <i class="fas fa-download me-2"></i>Export Records
+                            <div class="loading-spinner ms-2" id="exportSpinner"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <div class="stats-mini-number text-success" id="totalPresent">0</div>
+                        <div class="stats-mini-label">Present</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <div class="stats-mini-number text-danger" id="totalAbsent">0</div>
+                        <div class="stats-mini-label">Absent</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <div class="stats-mini-number text-warning" id="totalLate">0</div>
+                        <div class="stats-mini-label">Late</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <div class="stats-mini-number text-primary" id="attendancePercentage">0%</div>
+                        <div class="stats-mini-label">Attendance Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Chart -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="date-filter">
+                        <h6 class="mb-3">Filter by Date Range</h6>
+                        <div class="mb-3">
+                            <label class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="fromDate" onchange="filterRecords()">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="toDate" onchange="filterRecords()">
+                        </div>
+                        <button class="btn btn-outline-primary w-100" onclick="resetFilters()">
+                            <i class="fas fa-undo me-2"></i>Reset Filters
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="attendance-chart">
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Records Table -->
+            <div class="records-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5>
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Detailed Attendance Records
+                    </h5>
+                    <div>
+                        <select class="form-select" id="recordsPerPage" onchange="changeRecordsPerPage()">
+                            <option value="10">10 per page</option>
+                            <option value="25" selected>25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-attendance">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Subject/Class</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTableBody">
+                            <!-- Records will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="Records pagination" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Pagination will be generated here -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- No Records Found -->
+        <div id="noRecordsFound" class="no-records" style="display: none;">
+            <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+            <h4>No Student Selected</h4>
+            <p>Please search and select a student to view their attendance records.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample attendance data for students
+        const studentsData = {
+            "CS2024001": {
+                name: "Sarah Mitchell",
+                studentId: "CS2024001",
+                program: "Computer Science",
+                email: "sarah@student.edu",
+                phone: "555-0101",
+                records: generateAttendanceRecords("CS2024001", 90)
+            },
+            "DS2024005": {
+                name: "James Rodriguez",
+                studentId: "DS2024005",
+                program: "Data Science",
+                email: "james@student.edu",
+                phone: "555-0102",
+                records: generateAttendanceRecords("DS2024005", 85)
+            },
+            "SE2024012": {
+                name: "Emily Chen",
+                studentId: "SE2024012",
+                program: "Software Engineering",
+                email: "emily@student.edu",
+                phone: "555-0103",
+                records: generateAttendanceRecords("SE2024012", 95)
+            },
+            "CY2024008": {
+                name: "Michael Johnson",
+                studentId: "CY2024008",
+                program: "Cybersecurity",
+                email: "michael@student.edu",
+                phone: "555-0104",
+                records: generateAttendanceRecords("CY2024008", 78)
+            },
+            "AI2024003": {
+                name: "Ashley Davis",
+                studentId: "AI2024003",
+                program: "AI & Machine Learning",
+                email: "ashley@student.edu",
+                phone: "555-0105",
+                records: generateAttendanceRecords("AI2024003", 92)
+            }
+        };
+
+        let currentStudent = null;
+        let currentPage = 1;
+        let recordsPerPage = 25;
+        let filteredRecords = [];
+        let attendanceChart = null;
+
+        // Generate sample attendance records
+        function generateAttendanceRecords(studentId, attendanceRate) {
+            const records = [];
+            const subjects = ['Programming', 'Database Systems', 'Web Development', 'Data Structures', 'Algorithms'];
+            const statuses = ['present', 'absent', 'late', 'excused'];
+            const startDate = new Date('2024-01-15');
+            const endDate = new Date('2024-12-15');
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                // Skip weekends
+                if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+                const random = Math.random() * 100;
+                let status;
+                
+                if (random < attendanceRate * 0.8) {
+                    status = 'present';
+                } else if (random < attendanceRate * 0.9) {
+                    status = 'late';
+                } else if (random < attendanceRate) {
+                    status = 'excused';
+                } else {
+                    status = 'absent';
+                }
+
+                const timeIn = status !== 'absent' ? generateRandomTime('08:00', '09:30') : null;
+                const timeOut = status !== 'absent' ? generateRandomTime('15:00', '17:00') : null;
+                const duration = timeIn && timeOut ? calculateDuration(timeIn, timeOut) : null;
+                const subject = subjects[Math.floor(Math.random() * subjects.length)];
+
+                records.push({
+                    date: new Date(d).toISOString().split('T')[0],
+                    day: d.toLocaleDateString('en-US', { weekday: 'long' }),
+                    subject: subject,
+                    timeIn: timeIn,
+                    timeOut: timeOut,
+                    status: status,
+                    duration: duration,
+                    notes: generateNotes(status)
+                });
+            }
+
+            return records.reverse(); // Most recent first
+        }
+
+        function generateRandomTime(start, end) {
+            const startTime = new Date(`2024-01-01 ${start}`);
+            const endTime = new Date(`2024-01-01 ${end}`);
+            const randomTime = new Date(startTime.getTime() + Math.random() * (endTime.getTime() - startTime.getTime()));
+            return randomTime.toTimeString().slice(0, 5);
+        }
+
+        function calculateDuration(timeIn, timeOut) {
+            const inTime = new Date(`2024-01-01 ${timeIn}`);
+            const outTime = new Date(`2024-01-01 ${timeOut}`);
+            const diffMs = outTime - inTime;
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${minutes}m`;
+        }
+
+        function generateNotes(status) {
+            const notes = {
+                present: ['On time', 'Active participation', 'Good performance', ''],
+                absent: ['No notification', 'Sick leave', 'Family emergency', 'Personal reasons'],
+                late: ['Traffic delay', 'Overslept', 'Transportation issue', 'Previous class extended'],
+                excused: ['Medical appointment', 'Family event', 'Official leave', 'Academic conference']
+            };
+            const statusNotes = notes[status];
+            return statusNotes[Math.floor(Math.random() * statusNotes.length)];
+        }
+
+        // Search functionality
+        document.getElementById('studentSearch').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (query.length < 2) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            const matches = Object.values(studentsData).filter(student =>
+                student.name.toLowerCase().includes(query) ||
+                student.studentId.toLowerCase().includes(query) ||
+                student.program.toLowerCase().includes(query)
+            );
+
+            if (matches.length > 0) {
+                resultsContainer.innerHTML = matches.map(student => `
+                    <div class="search-result-item" onclick="selectStudent('${student.studentId}')">
+                        <strong>${student.name}</strong><br>
+                        <small class="text-muted">${student.studentId} • ${student.program}</small>
+                    </div>
+                `).join('');
+                resultsContainer.style.display = 'block';
+            } else {
+                resultsContainer.innerHTML = '<div class="search-result-item">No students found</div>';
+                resultsContainer.style.display = 'block';
+            }
+        });
+
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.position-relative')) {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        });
+
+        function selectStudent(studentId) {
+            const student = studentsData[studentId];
+            if (!student) return;
+
+            currentStudent = student;
+            document.getElementById('studentSearch').value = `${student.name} (${student.studentId})`;
+            document.getElementById('searchResults').style.display = 'none';
+            
+            loadStudentRecords();
+        }
+
+        function searchStudent() {
+            const query = document.getElementById('studentSearch').value;
+            const match = Object.values(studentsData).find(student =>
+                query.includes(student.name) || query.includes(student.studentId)
+            );
+            
+            if (match) {
+                selectStudent(match.studentId);
+            } else {
+                alert('Please select a student from the search results');
+            }
+        }
+
+        function loadStudentRecords() {
+            if (!currentStudent) return;
+
+            // Show records section
+            document.getElementById('recordsSection').style.display = 'block';
+            document.getElementById('noRecordsFound').style.display = 'none';
+
+            // Update student header
+            document.getElementById('studentName').textContent = currentStudent.name;
+            document.getElementById('studentDetails').textContent = 
+                `${currentStudent.studentId} • ${currentStudent.program} • ${currentStudent.email}`;
+
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            document.getElementById('fromDate').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('toDate').value = today.toISOString().split('T')[0];
+
+            // Load and display records
+            filterRecords();
+            updateQuickStats();
+            updateAttendanceChart();
+        }
+
+        function filterRecords() {
+            if (!currentStudent) return;
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            filteredRecords = currentStudent.records.filter(record => {
+                if (fromDate && record.date < fromDate) return false;
+                if (toDate && record.date > toDate) return false;
+                return true;
+            });
+
+            currentPage = 1;
+            updateRecordsTable();
+            updateQuickStats();
+            updateAttendanceChart();
+        }
+
+        function resetFilters() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            filterRecords();
+        }
+
+        function updateQuickStats() {
+            if (filteredRecords.length === 0) return;
+
+            const stats = filteredRecords.reduce((acc, record) => {
+                acc[record.status]++;
+                return acc;
+            }, { present: 0, absent: 0, late: 0, excused: 0 });
+
+            document.getElementById('totalPresent').textContent = stats.present + stats.late;
+            document.getElementById('totalAbsent').textContent = stats.absent;
+            document.getElementById('totalLate').textContent = stats.late;
+
+            const attendanceRate = ((stats.present + stats.late + stats.excused) / filteredRecords.length * 100).toFixed(1);
+            document.getElementById('attendancePercentage').textContent = attendanceRate + '%';
+        }
+
+        function updateRecordsTable() {
+            const tbody = document.getElementById('recordsTableBody');
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pageRecords.map(record => `
+                <tr>
+                    <td>${new Date(record.date).toLocaleDateString()}</td>
+                    <td>${record.day}</td>
+                    <td>${record.subject}</td>
+                    <td>${record.timeIn || '-'}</td>
+                    <td>${record.timeOut || '-'}</td>
+                    <td><span class="attendance-status status-${record.status}">${record.status.toUpperCase()}</span></td>
+                    <td>${record.duration || '-'}</td>
+                    <td>${record.notes}</td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+                </li>
+            `;
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    paginationHTML += `
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                        </li>
+                    `;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+
+            // Next button
+            paginationHTML += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+                </li>
+            `;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            updateRecordsTable();
+        }
+
+        function changeRecordsPerPage() {
+            recordsPerPage = parseInt(document.getElementById('recordsPerPage').value);
+            currentPage = 1;
+            updateRecordsTable();
+        }
+
+        function updateAttendanceChart() {
+            const ctx = document.getElementById('attendanceChart');
+            
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+
+            // Group records by week
+            const weeklyData = {};
+            filteredRecords.forEach(record => {
+                const date = new Date(record.date);
+                const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+                const weekKey = weekStart.toISOString().split('T')[0];
+                
+                if (!weeklyData[weekKey]) {
+                    weeklyData[weekKey] = { present: 0, absent: 0, total: 0 };
+                }
+                
+                weeklyData[weekKey].total++;
+                if (record.status === 'present' || record.status === 'late' || record.status === 'excused') {
+                    weeklyData[weekKey].present++;
+                } else {
+                    weeklyData[weekKey].absent++;
+                }
+            });
+
+            const labels = Object.keys(weeklyData).map(week => {
+                const date = new Date(week);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+
+            const attendanceRates = Object.values(weeklyData).map(week => 
+                week.total > 0 ? (week.present / week.total * 100).toFixed(1) : 0
+            );
+
+            attendanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Weekly Attendance Rate (%)',
+                        data: attendanceRates,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Weekly Attendance Trend'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportRecords() {
+            if (!currentStudent || filteredRecords.length === 0) {
+                alert('No records to export');
+                return;
+            }
+
+            const spinner = document.getElementById('exportSpinner');
+            spinner.style.display = 'inline-block';
+
+            setTimeout(() => {
+                const csvContent = [
+                    ['Student Name', 'Student ID', 'Program', 'Date', 'Day', 'Subject', 'Time In', 'Time Out', 'Status', 'Duration', 'Notes'],
+                    ...filteredRecords.map(record => [
+                        currentStudent.name,
+                        currentStudent.studentId,
+                        currentStudent.program,
+                        record.date,
+                        record.day,
+                        record.subject,
+                        record.timeIn || '',
+                        record.timeOut || '',
+                        record.status,
+                        record.duration || '',
+                        record.notes
+                    ])
+                ].map(row => row.map(field => `"${field}"`).join(',')).join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.setAttribute('hidden', '');
+                a.setAttribute('href', url);
+                a.setAttribute('download', `${currentStudent.studentId}_attendance_records.csv`);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                spinner.style.display = 'none';
+                
+                // Show success message
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-success position-fixed';
+                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                toast.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    Records exported successfully!
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }, 1000);
+        }
+
+        // Initialize default view
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('noRecordsFound').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
